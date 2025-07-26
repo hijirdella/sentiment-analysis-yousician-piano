@@ -2,7 +2,7 @@ import streamlit as st
 import joblib
 import pandas as pd
 import matplotlib.pyplot as plt
-from matplotlib.ticker import MaxNLocator
+from matplotlib.ticker import FuncFormatter
 import pytz
 from datetime import datetime
 
@@ -16,11 +16,11 @@ label_map = {'positive': 'Positif', 'negative': 'Negatif'}
 color_map = {'Positif': 'blue', 'Negatif': 'red'}
 
 # === Judul Aplikasi ===
-st.title("🎹 Aplikasi Analisis Sentimen – Yousician Learn Piano")
+st.title("\U0001F3B9 Aplikasi Analisis Sentimen – Yousician Learn Piano")
 
 # === Pilih Mode Input ===
-st.header("📌 Pilih Metode Input")
-input_mode = st.radio("Pilih salah satu:", ["📝 Input Manual", "📁 Upload File CSV"])
+st.header("\U0001F4CC Pilih Metode Input")
+input_mode = st.radio("Pilih salah satu:", ["\U0001F4DD Input Manual", "\U0001F4C1 Upload File CSV"])
 
 # === Zona waktu WIB ===
 wib = pytz.timezone("Asia/Jakarta")
@@ -29,14 +29,14 @@ now_wib = datetime.now(wib)
 # ========================================
 # 📝 MODE 1: INPUT MANUAL
 # ========================================
-if input_mode == "📝 Input Manual":
-    st.subheader("🧾 Masukkan Satu Review Pengguna")
+if input_mode == "\U0001F4DD Input Manual":
+    st.subheader("\U0001F9FE Masukkan Satu Review Pengguna")
 
-    name = st.text_input("👤 Nama Pengguna:")
+    name = st.text_input("\U0001F464 Nama Pengguna:")
     star_rating = st.selectbox("⭐ Rating Bintang:", [1, 2, 3, 4, 5])
     user_review = st.text_area("💬 Tulis Review Pengguna:")
 
-    review_day = st.date_input("📅 Tanggal:", value=now_wib.date())
+    review_day = st.date_input("\U0001F4C5 Tanggal:", value=now_wib.date())
     review_time = st.time_input("⏰ Waktu:", value=now_wib.time())
 
     review_datetime = datetime.combine(review_day, review_time)
@@ -62,7 +62,7 @@ if input_mode == "📝 Input Manual":
 
             csv_manual = result_df.to_csv(index=False).encode('utf-8')
             st.download_button(
-                label="📥 Unduh Hasil sebagai CSV",
+                label="📅 Unduh Hasil sebagai CSV",
                 data=csv_manual,
                 file_name="hasil_prediksi_manual_Yousician_Learn_Piano.csv",
                 mime="text/csv"
@@ -72,7 +72,7 @@ if input_mode == "📝 Input Manual":
 # 📁 MODE 2: UPLOAD FILE CSV
 # ========================================
 else:
-    st.subheader("📄 Unggah File CSV Review")
+    st.subheader("\U0001F4C4 Unggah File CSV Review")
     uploaded_file = st.file_uploader(
         "Pilih file CSV (harus memiliki kolom: 'name', 'star_rating', 'date', 'review')",
         type=['csv']
@@ -89,18 +89,18 @@ else:
             y_pred = model.predict(X_vec)
             df['predicted_sentiment'] = label_encoder.inverse_transform(y_pred)
 
-            st.success("✅ Prediksi berhasil!")
+            st.success("\u2705 Prediksi berhasil!")
 
             min_date = df['date'].min().date()
             max_date = df['date'].max().date()
 
-            st.subheader("🗓️ Filter Rentang Tanggal")
+            st.subheader("\U0001F5D3️ Filter Rentang Tanggal")
             start_date = st.date_input("Mulai", min_value=min_date, max_value=max_date, value=min_date)
             end_date = st.date_input("Selesai", min_value=min_date, max_value=max_date, value=max_date)
 
             filtered_df = df[(df['date'].dt.date >= start_date) & (df['date'].dt.date <= end_date)]
 
-            sentiment_option = st.selectbox("🎯 Filter Sentimen:", ["Semua", "Positif", "Negatif"])
+            sentiment_option = st.selectbox("\U0001F3AF Filter Sentimen:", ["Semua", "Positif", "Negatif"])
             if sentiment_option == "Positif":
                 filtered_df = filtered_df[filtered_df['predicted_sentiment'] == "positive"]
             elif sentiment_option == "Negatif":
@@ -112,7 +112,7 @@ else:
                 height=400
             )
 
-            st.subheader("📊 Distribusi Sentimen – Diagram Batang")
+            st.subheader("\U0001F4CA Distribusi Sentimen – Diagram Batang")
             sentimen_bahasa = filtered_df['predicted_sentiment'].map(label_map)
             bar_data = sentimen_bahasa.value_counts().reset_index()
             bar_data.columns = ['Sentimen', 'Jumlah']
@@ -122,13 +122,14 @@ else:
             bars = ax_bar.bar(bar_data['Sentimen'], bar_data['Jumlah'], color=colors)
 
             max_jumlah = bar_data['Jumlah'].max()
-            ax_bar.set_ylim(0, (max_jumlah // 5 + 1) * 5)
-            ax_bar.yaxis.set_major_locator(MaxNLocator(integer=True))
+            ax_bar.set_ylim(0, max_jumlah * 1.1)
+            ax_bar.yaxis.set_major_formatter(FuncFormatter(lambda x, _: f'{int(x):,}'.replace(',', '.')))
 
             for bar in bars:
                 height = bar.get_height()
-                ax_bar.text(bar.get_x() + bar.get_width() / 2, height + 0.2, f'{int(height)}',
-                            ha='center', va='bottom', fontsize=10)
+                ax_bar.text(bar.get_x() + bar.get_width() / 2, height * 0.95,
+                            f'{int(height):,}'.replace(',', '.'),
+                            ha='center', va='top', color='white', fontsize=10, fontweight='bold')
 
             ax_bar.set_ylabel("Jumlah")
             ax_bar.set_xlabel("Sentimen")
@@ -141,7 +142,7 @@ else:
 
             def autopct_format(pct, allvals):
                 absolute = int(round(pct / 100. * sum(allvals)))
-                return f"{pct:.1f}%\n({absolute})"
+                return f"{pct:.1f}%\n({absolute:,})".replace(',', '.')
 
             fig_pie, ax_pie = plt.subplots()
             ax_pie.pie(
@@ -149,14 +150,15 @@ else:
                 labels=pie_data.index,
                 colors=pie_colors,
                 autopct=lambda pct: autopct_format(pct, pie_data),
-                startangle=90
+                startangle=90,
+                textprops={'fontsize': 10}
             )
             ax_pie.axis('equal')
             st.pyplot(fig_pie)
 
             csv_result = filtered_df.to_csv(index=False).encode('utf-8')
             st.download_button(
-                label="📥 Unduh Hasil CSV",
+                label="📅 Unduh Hasil CSV",
                 data=csv_result,
                 file_name="hasil_prediksi_Yousician_Learn_Piano.csv",
                 mime="text/csv"
